@@ -1,6 +1,6 @@
 # veloworkspace-tools
 
-Benchmark scripts used to measure [Velo Workspaces](https://apps.apple.com/app/velo-workspaces/id6805509975)' AI Bridge — comparing local LLM inference reached from the macOS host directly vs. reached from inside a Linux VM over AI Bridge's vsock-based channel.
+Benchmark scripts used to measure [Velo Workspaces](https://www.veloworkspaces.com)' AI Bridge — comparing local LLM inference reached from the macOS host directly vs. reached from inside a Linux VM over AI Bridge's vsock-based channel.
 
 Full writeup with methodology and results: *(dev.to link once published)*
 
