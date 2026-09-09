@@ -40,6 +40,28 @@ python oi_perf_test.py --env vm
 
 `--env` only affects the printed environment banner (host vs. VM auto-detected hardware info) — point `--port` at whichever endpoint you're actually testing (Ollama's native port on the host, or the AI Bridge-forwarded port inside a workspace).
 
+## ⚠️ Before every run: stop all VMs and restart Ollama fresh
+
+This matters more than it sounds like it should. Between the **host** run and the **VM** run of any of these scripts, fully stop any running Velo Workspaces VM and restart `ollama serve` from scratch before starting the next test. A workspace or model server left running in the background from a previous run contends with the one you're actually measuring for CPU and scheduling, and it shows up in the numbers — in our own testing, skipping this step produced wildly bimodal, unrepresentative results on `oi_perf_test.py` (some iterations 10x slower than others, purely from leftover contention) that vanished entirely once we adopted a strict stop-everything-then-restart-fresh protocol between every run. Sequence per test:
+
+```
+stop all VMs → stop Ollama → ollama serve → run the host test
+stop all VMs → stop Ollama → ollama serve → start the VM → ssh in → run the vm test
+```
+
+## Sample results
+
+Mac mini (Apple M4, 10-core, 16GB), Linux VM (Ubuntu Server 26.04 minimized, 4 vCPU, 4GB), `qwen2.5-coder:7b` (Q4_K_M) served by Ollama on the host. Measured with the stop-everything-then-restart protocol above.
+
+| Test | Host | AI Bridge (VM) | Delta |
+|---|---|---|---|
+| Time to first token | 56 ms | 59 ms | +6% |
+| Throughput | 22.09 tok/s | 21.78 tok/s | −1% |
+| Concurrent load (8 clients, wall time) | 15.04 s | 12.73 s | 15% faster via AI Bridge |
+| Agentic loop, mean per task (Open Interpreter) | 6.45–9.08 s | 5.38–6.56 s | 17–28% faster via AI Bridge |
+
+Raw single-request speed is close to a wash — AI Bridge adds one network hop, which shows up as a small, expected overhead. Concurrent load and real agentic workflows both came out faster through AI Bridge, most likely because the VM's client process runs isolated from whatever else is happening on the host, rather than sharing the same physical cores as the process it's talking to.
+
 ## Methodology notes
 
 - All three scripts target an OpenAI-compatible `/v1/chat/completions` endpoint (Ollama's).
