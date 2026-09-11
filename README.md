@@ -9,8 +9,9 @@ Full writeup with methodology and results: *(dev.to link once published)*
 - **`ai_perf_test.py`** — single-request benchmark. Measures time-to-first-token and sustained throughput (tok/s) over 5 iterations, streaming, deterministic (`temperature=0`).
 - **`ai_load_test.py`** — concurrency benchmark. Fires N parallel requests (default 8) at the same endpoint and reports total wall time and average per-client latency.
 - **`oi_perf_test.py`** — real-world agentic-loop benchmark using [Open Interpreter](https://github.com/OpenInterpreter/open-interpreter). Measures the full round trip: prompt → generated code → code execution → result, across three representative tasks (math computation, system info, file I/O), 5 iterations each.
+- **`opencode_perf_test.py`** — the same agentic-loop benchmark as `oi_perf_test.py`, driving [OpenCode](https://github.com/sst/opencode) (`opencode run --auto`) instead of Open Interpreter. Same three tasks, same 5-iteration protocol; use whichever agent CLI matches what you're actually shipping.
 
-All three auto-detect whether they're running on macOS (host) or Linux (VM) and print hardware/OS info alongside the results, so output is self-describing.
+All four auto-detect whether they're running on macOS (host) or Linux (VM) and print hardware/OS info alongside the results, so output is self-describing.
 
 ## Requirements
 
@@ -19,6 +20,8 @@ pip install httpx rich open-interpreter
 ```
 
 `oi_perf_test.py` additionally requires [Ollama](https://ollama.com) running locally (or reachable at the configured `--port`) with the target model pulled.
+
+`opencode_perf_test.py` additionally requires the [OpenCode CLI](https://github.com/sst/opencode) installed at `~/.opencode/bin/opencode`, and an OpenAI-compatible server (Ollama, MLX, llama-server, …) reachable at `--port`.
 
 ## Usage
 
@@ -36,6 +39,10 @@ python ai_load_test.py --env vm   --model qwen2.5-coder:7b --clients 8
 # Real agentic-loop latency (Open Interpreter)
 python oi_perf_test.py --env host
 python oi_perf_test.py --env vm
+
+# Real agentic-loop latency (OpenCode)
+python opencode_perf_test.py --env host --port 8080 --model mlx-community/Qwen2.5-Coder-7B-Instruct-4bit
+python opencode_perf_test.py --env vm   --port 8080 --model mlx-community/Qwen2.5-Coder-7B-Instruct-4bit
 ```
 
 `--env` only affects the printed environment banner (host vs. VM auto-detected hardware info) — point `--port` at whichever endpoint you're actually testing (Ollama's native port on the host, or the AI Bridge-forwarded port inside a workspace).
